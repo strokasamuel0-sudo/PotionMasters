@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POTION MASTERS | Shalom Interactive VR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Metamorphous&family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #ffcf4d;
+            --emerald: #00ff88;
+            --bg: #050505;
+            --panel: rgba(255, 255, 255, 0.03);
+        }
+
+        /* GLOBÁLNE NASTAVENIA */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; cursor: crosshair; }
+        body { background: var(--bg); color: #fff; overflow-x: hidden; scroll-behavior: smooth; }
+
+        /* MAGICKÝ KURZOR */
+        #magic-cursor {
+            position: fixed; width: 40px; height: 40px; background: var(--emerald);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            mix-blend-mode: screen; filter: blur(12px); transition: transform 0.1s ease;
+            opacity: 0.6;
+        }
+
+        /* ANIMOVANÉ POZADIE */
+        #canvas-bg { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.5; }
+
+        /* NAVIGÁCIA */
+        nav {
+            position: fixed; top: 0; width: 100%; padding: 25px 50px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1000; backdrop-filter: blur(15px); border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-logo { font-family: 'Cinzel Decorative'; color: var(--gold); font-size: 1.4rem; text-decoration: none; letter-spacing: 2px; }
+        .nav-download {
+            padding: 14px 40px; background: var(--gold); color: #000;
+            text-decoration: none; font-weight: 900; letter-spacing: 2px;
+            transition: 0.4s; box-shadow: 0 0 10px rgba(255, 207, 77, 0.2);
+        }
+        .nav-download:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--gold); }
+
+        /* STRÁNKY */
+        .page { display: none; min-height: 100vh; animation: pageIn 0.8s ease forwards; }
+        .page.active { display: block; }
+        @keyframes pageIn { from { opacity: 0; filter: blur(5px); } to { opacity: 1; filter: blur(0); } }
+
+        /* HERO SEKCIJA */
+        .hero {
+            height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .hero h1 { 
+            font-family: 'Cinzel Decorative'; font-size: clamp(3.5rem, 12vw, 8rem); 
+            color: var(--gold); text-shadow: 0 0 50px rgba(255,207,77,0.4);
+            margin-bottom: 20px;
+            animation: titleFloat 4s ease-in-out infinite;
+        }
+        @keyframes titleFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* MARKETINGOVÉ SEKcie */
+        .content-wrap { max-width: 1200px; margin: 0 auto; padding: 100px 20px; }
+        
+        .reveal { opacity: 0; transform: translateY(60px) scale(0.95); transition: 1.2s cubic-bezier(0.17, 0.67, 0.83, 0.67) all; }
+        .reveal.active { opacity: 1; transform: translateY(0) scale(1); }
+
+        .feature-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+            align-items: center; margin-bottom: 150px;
+        }
+        .feature-row.reverse { direction: rtl; }
+        .feature-row.reverse div { direction: ltr; }
+
+        .photo-slot {
+            width: 100%; height: 450px; background: var(--panel);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
+            overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .photo-slot img { 
+            width: 110%; height: 110%; object-fit: cover; 
+            transition: transform 0.1s ease-out;
+            position: absolute; top: -5%; left: -5%;
+        }
+
+        .photo-caption {
+            font-size: 0.8rem; color: #555; text-align: right;
+            margin-top: 5px; font-style: italic; letter-spacing: 1px;
+        }
+
+        .text-box h2 { font-family: 'Cinzel Decorative'; color: var(--gold); font-size: 2.6rem; margin-bottom: 25px; }
+        .text-box p { line-height: 2; color: #ccc; font-size: 1.1rem; }
+        .highlight { color: var(--emerald); font-weight: 700; text-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+
+        /* DOWNLOAD PAGE */
+        .download-hero {
+            height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+        }
+        .price-card {
+            background: rgba(255, 255, 255, 0.02); padding: 60px 100px; border-radius: 40px;
+            border: 2px solid var(--emerald); backdrop-filter: blur(20px);
+            margin-bottom: 30px;
+            position: relative;
+            animation: glowPulse 3s infinite;
+        }
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); }
+            50% { box-shadow: 0 0 50px rgba(0, 255, 136, 0.3); }
+        }
+
+        .old-p { text-decoration: line-through; color: #444; font-size: 2.2rem; }
+        .new-p { color: var(--emerald); font-size: 5.5rem; font-weight: 900; text-shadow: 0 0 40px var(--emerald); }
+
+        .info-text { color: #888; margin-top: 20px; font-size: 0.95rem; line-height: 1.6; max-width: 500px; }
+
+        .dl-btn {
+            padding: 25px 90px; background: var(--gold); color: #000;
+            text-decoration: none; font-weight: 900; font-size: 1.6rem;
+            letter-spacing: 3px; transition: 0.4s;
+            margin-top: 30px;
+        }
+        .dl-btn:hover { transform: translateY(-5px); box-shadow: 0 15px 40px var(--gold); }
+
+        footer { text-align: center; padding: 60px; color: #333; font-size: 0.8rem; border-top: 1px solid #111; }
+    </style>
+</head>
+<body>
+
+    <div id="magic-cursor"></div>
+    <canvas id="canvas-bg"></canvas>
+
+    <nav>
+        <a href="#" class="nav-logo" onclick="showPage('main-page')">SHALOM INTERACTIVE</a>
+        <a href="#" class="nav-download" onclick="showPage('download-page')">DOWNLOAD NOW</a>
+    </nav>
+
+    <div id="main-page" class="page active">
+        <section class="hero">
+            <h1>POTION MASTERS</h1>
+            <div style="margin-top: 20px; width: 120px; height: 3px; background: var(--gold); box-shadow: 0 0 20px var(--gold);"></div>
+        </section>
+
+        <div class="content-wrap">
+            <div class="feature-row reveal">
+                <div>
+                    <div class="photo-slot">
+                        <img src="foto1.png" alt="Chodba" class="parallax-img">
+                    </div>
+                    <p class="photo-caption">Ilustračné foto</p>
+                </div>
+                <div class="text-box">
+                    <h2>01. Úplná Sloboda Pohybu</h2>
+                    <p>Zabudni na zložité ovládanie. V Potion Masters je všetko prirodzené. Stačí natiahnuť ruku, <span class="highlight">chytiť fľašu</span> a si v hre. Tvoje ruky sú tvojím jediným nástrojom v celom tomto magickom svete.</p>
+                </div>
+            </div>
+
+            <div class="feature-row reverse reveal">
+                <div class="photo-slot">
+                    <img src="foto2.png" alt="Súboj" class="parallax-img">
+                </div>
+                <div class="text-box">
+                    <h2>02. Súboj Proti Hráčovi</h2>
+                    <p>Stojíš tvárou v tvár <span class="highlight">skutočnému súperovi</span>. Žiadne boty, žiadna nuda. Vidíš každý jeho pohyb, kým sa obaja snažíte namiešať recept, ktorý vám pripravila umelá inteligencia. Kto z vás dvoch bude rýchlejší?</p>
+                </div>
+            </div>
+
+            <div class="feature-row reveal">
+                <div class="photo-slot">
+                    <img src="foto3.png" alt="Pravidlá" class="parallax-img">
+                </div>
+                <div class="text-box">
+                    <h2>03. Rýchlosť alebo Smrť</h2>
+                    <p>Máš len 90 sekúnd na to, aby si súpera porazil. Každá chyba ťa stojí život. Recepty sú náhodné a čím si rýchlejší, tým máš väčšiu šancu vyhrať. <span class="highlight">Tri životy</span> sú všetko, čo ťa delí od porážky.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="download-page" class="page">
+        <div class="download-hero">
+            <h2 style="font-family: 'Cinzel Decorative'; font-size: 3rem; color: var(--gold); margin-bottom: 30px;">LIMITOVANÁ PONUKA</h2>
+            
+            <div class="price-card">
+                <p class="old-p">$4.99</p>
+                <p class="new-p">$0.00</p>
+                <p style="color: var(--emerald); letter-spacing: 5px; margin-top: 15px; font-weight: 900;">FULL ACCESS</p>
+            </div>
+
+            <div class="info-text">
+                Vytvorené štúdiom <strong>Shalom Interactive</strong>.<br>
+                Kompatibilné s <strong>Meta Quest 2 / 3 / Pro</strong> a <strong>SteamVR</strong> platformami.
+            </div>
+
+            <a href="https://drive.google.com/uc?export=download&id=1P3E1hhExARjHyEP8_34ubyGHcn3kR3QS" class="dl-btn">DOWNLOAD NOW</a>
+            
+            <a href="#" onclick="showPage('main-page')" style="margin-top: 50px; color: #555; text-decoration: none; font-weight: 700;">← SPÄŤ DO DIELNE</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 SHALOM INTERACTIVE. VŠETKY PRÁVA VYHRADENÉ.</p>
+    </footer>
+
+    <script>
+        // KURZOR
+        const cursor = document.getElementById('magic-cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        // PREPÍNANIE STRÁNOK
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // PARALLAX EFEKT PRE OBRÁZKY
+        window.addEventListener('scroll', () => {
+            const imgs = document.querySelectorAll('.parallax-img');
+            imgs.forEach(img => {
+                const speed = 0.05;
+                const rect = img.parentElement.getBoundingClientRect();
+                const offset = window.innerHeight - rect.top;
+                if (offset > 0 && rect.bottom > 0) {
+                    img.style.transform = `translateY(${offset * speed}px)`;
+                }
+            });
+        });
+
+        // ANIMÁCIA PRI SKROLOVANÍ (REVEAL)
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                if (elementTop < windowHeight - 100) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+
+        // MAGICKÝ PRACH (CANVAS)
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() { this.init(); }
+            init() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 0.4 - 0.2;
+                this.speedY = Math.random() * 0.4 - 0.2;
+                this.color = Math.random() > 0.5 ? '#ffcf4d' : '#00ff88';
+                this.alpha = Math.random();
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.init();
+            }
+            draw() {
+                ctx.globalAlpha = this.alpha; ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        for (let i = 0; i < 180; i++) particles.push(new Particle());
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
